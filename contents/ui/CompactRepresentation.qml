@@ -15,9 +15,9 @@ Item {
     Layout.minimumHeight: isVertical ? wrapper_vertical.implicitHeight : root.height
 
     readonly property bool isVertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
-    property bool textweather: Plasmoid.configuration.textweather
 
     // --- PROPRIÉTÉS DE CONFIGURATION ---
+    property bool showTemperatureText: Plasmoid.configuration.textweather
     property real fontTemp: Plasmoid.configuration.sizeFontTemp
     property real fontCond: Plasmoid.configuration.sizeFontCond
     property bool reverseOrder: Plasmoid.configuration.reverseOrder
@@ -25,9 +25,17 @@ Item {
     readonly property bool showCondition: Plasmoid.configuration.showConditionOnPanel || false
 
     MouseArea {
+        id: panelMouse
         anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
         onClicked: root.expanded = !root.expanded
     }
+
+    // Léger retour tactile au clic — cohérent avec les éléments interactifs
+    // de la vue complète (bouton retour, jours de prévisions cliquables).
+    opacity: panelMouse.pressed ? 0.75 : 1.0
+    Behavior on opacity { NumberAnimation { duration: 120 } }
 
     // --- MODE HORIZONTAL (Panel en bas/haut) ---
     RowLayout {
@@ -53,13 +61,13 @@ Item {
             columns: 1
             rowSpacing: 0
             Layout.alignment: Qt.AlignVCenter
-            visible: textweather || showCondition
+            visible: showTemperatureText || showCondition
 
             // 1. BLOC TEMPÉRATURE
             Row {
                 id: tempRow
-                visible: textweather
-                // Si reverseOrder est vrai, on passe à la ligne 1 (bas), sinon ligne 0 (haut) [cite: 7]
+                visible: showTemperatureText
+                // Si reverseOrder est vrai, on passe à la ligne 1 (bas), sinon ligne 0 (haut)
                 Layout.row: reverseOrder ? 1 : 0
 
                 PlasmaComponents3.Label {

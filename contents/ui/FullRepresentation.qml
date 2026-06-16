@@ -28,19 +28,62 @@ Item {
     readonly property var hourlyData: (weatherData && weatherData.weatherData && weatherData.weatherData.hourly) ? weatherData.weatherData.hourly : null
     readonly property bool hasHourlyData: !!hourlyData
 
+    // Accès sécurisé et centralisé aux données journalières. Évite de répéter
+    // "weatherData && weatherData.weatherData && weatherData.weatherData.daily"
+    // à chaque utilisation — l'original accédait parfois directement à
+    // ".weatherData.daily" sans vérifier l'étage intermédiaire, ce qui pouvait
+    // planter le popup si "weatherData" existait sans "weatherData.weatherData".
+    readonly property var dailyData: (weatherData && weatherData.weatherData && weatherData.weatherData.daily) ? weatherData.weatherData.daily : null
+
     // Index du jour courant dans le tableau daily
     readonly property int currentDayIndex: {
-        if (!weatherData || !weatherData.weatherData || !weatherData.weatherData.daily) return 0;
+        if (!dailyData) return 0;
         let today = new Date();
         let todayStr = today.getFullYear() + "-" +
         String(today.getMonth() + 1).padStart(2, "0") + "-" +
         String(today.getDate()).padStart(2, "0");
-        let times = weatherData.weatherData.daily.time;
+        let times = dailyData.time;
         for (let i = 0; i < times.length; i++) {
             if (times[i] === todayStr) return i;
         }
         return 0;
     }
+
+    // Source unique de vérité pour les 4 courbes (température, humidité, vent,
+    // UV) : libellé complet, libellé court d'onglet, unité et couleur. Avant,
+    // ces informations étaient dupliquées dans deux switch/case distincts et
+    // dans 4 littéraux de couleur répétés pour les onglets — toute couleur
+    // changée à un endroit risquait d'être oubliée à l'autre.
+    readonly property var chartDefs: [
+        {
+            field: "temperature_2m",
+            label: i18n("Temp."),
+            tabLabel: i18n("Temp."),
+            unit: unitStr,
+            color: Qt.rgba(0.92, 0.62, 0.15, 1.0) // ambre
+        },
+        {
+            field: "relative_humidity_2m",
+            label: i18n("Hum."),
+            tabLabel: i18n("Hum."),
+            unit: "%",
+            color: Qt.rgba(0.29, 0.56, 0.88, 1.0) // bleu doux
+        },
+        {
+            field: "wind_speed_10m",
+            label: i18n("Wind"),
+            tabLabel: i18n("Wind"),
+            unit: (unitStr === "°C" ? " km/h" : " mph"),
+            color: Qt.rgba(0.29, 0.50, 0.66, 1.0)
+        },
+        {
+            field: "uv_index",
+            label: i18n("UV Index"),
+            tabLabel: i18n("UV"),
+            unit: "",
+            color: Qt.rgba(0.55, 0.25, 0.90, 1.0) // violet
+        }
+    ]
 
     function hourlySlice(fieldName) {
         if (!hourlyData || !hourlyData[fieldName] || selectedDayIndex < 0) return [];
@@ -158,7 +201,12 @@ Item {
             id: classicContent
             anchors.fill: parent
             spacing: 0
-            visible: rootItem.selectedDayIndex === -1
+
+            // Fondu croisé entre vue classique et vue détail, plutôt qu'une
+            // bascule de "visible" sèche : rendu plus doux, toujours minimal.
+            opacity: rootItem.selectedDayIndex === -1 ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
             RowLayout {
                 id: headerSection
@@ -218,28 +266,30 @@ Item {
                         columnSpacing: Kirigami.Units.smallSpacing
                         layoutDirection: Qt.RightToLeft
                         Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                        Layout.rightMargin: -7.5
+
+                        // Micro-ajustement visuel : compense le padding interne
+                        // des Label pour un alignement optique parfait avec le
+                        // bord droit du widget.
+                        readonly property real rightNudge: -7.5
+                        Layout.rightMargin: rightNudge
                         Layout.topMargin: root.showConditionFull ? 0 : Kirigami.Units.gridUnit * 0.4
 
-                        CompactGridItem {
-                            visible: !!root.showWind
-                            label: i18n("Wind")
-                            value: (weatherData && weatherData.windSpeed !== "--") ? (weatherData.windSpeed + (unitStr === "°C" ? " km/h" : " mph")) : "--"
-                        }
-                        CompactGridItem {
-                            visible: !!root.showUVIndex
-                            label: i18n("UV")
-                            value: (weatherData && weatherData.uvIndex !== "--") ? weatherData.uvIndex : "--"
-                        }
-                        CompactGridItem {
-                            visible: !!root.showHumidity
-                            label: i18n("Hum.")
-                            value: (weatherData && weatherData.humidity !== "--") ? (weatherData.humidity + "%") : "--"
-                        }
-                        CompactGridItem {
-                            visible: !!root.showApparentTemp
-                            label: i18n("Feels")
-                            value: (weatherData && weatherData.apparentTemp !== "--") ? (weatherData.apparentTemp + unitStr) : "--"
+                        // On ne génère que les éléments réellement visibles :
+                        // plus besoin de "visible: !!root.showX" sur chaque
+                        // CompactGridItem, et GridLayout n'a rien à exclure.
+                        readonly property var quickStats: [
+                            { label: i18n("Wind"),  value: (weatherData && weatherData.windSpeed !== "--") ? (weatherData.windSpeed + (unitStr === "°C" ? " km/h" : " mph")) : "--", show: !!root.showWind },
+                            { label: i18n("UV"),    value: (weatherData && weatherData.uvIndex !== "--") ? weatherData.uvIndex : "--", show: !!root.showUVIndex },
+                            { label: i18n("Hum."),  value: (weatherData && weatherData.humidity !== "--") ? (weatherData.humidity + "%") : "--", show: !!root.showHumidity },
+                            { label: i18n("Feels"), value: (weatherData && weatherData.apparentTemp !== "--") ? (weatherData.apparentTemp + unitStr) : "--", show: !!root.showApparentTemp }
+                        ].filter(function (d) { return d.show; })
+
+                        Repeater {
+                            model: detailsGrid.quickStats
+                            delegate: CompactGridItem {
+                                label: modelData.label
+                                value: modelData.value
+                            }
                         }
                     }
                 }
@@ -261,8 +311,7 @@ Item {
                 interactive: true
                 clip: true
 
-                model: (weatherData && weatherData.weatherData && weatherData.weatherData.daily && weatherData.weatherData.daily.time)
-                ? (weatherData.weatherData.daily.time.length - root.forecastStartDay) : 0
+                model: (rootItem.dailyData && rootItem.dailyData.time) ? (rootItem.dailyData.time.length - root.forecastStartDay) : 0
 
                 delegate: ColumnLayout {
                     width: forecastSection.width / 3
@@ -272,8 +321,8 @@ Item {
                     PlasmaComponents3.Label {
                         Layout.fillWidth: true
                         text: {
-                            if (weatherData && weatherData.weatherData && weatherData.weatherData.daily && weatherData.weatherData.daily.time) {
-                                let d = new Date(weatherData.weatherData.daily.time[dayIndex]);
+                            if (rootItem.dailyData && rootItem.dailyData.time) {
+                                let d = new Date(rootItem.dailyData.time[dayIndex]);
                                 return root.days ? root.days[d.getDay()] : "";
                             }
                             return "";
@@ -284,15 +333,24 @@ Item {
                         opacity: 0.8
                     }
 
-                    Kirigami.Icon {
+                    Item {
+                        id: iconWrapper
                         Layout.preferredWidth: Kirigami.Units.gridUnit * 2.7
                         Layout.preferredHeight: Kirigami.Units.gridUnit * 2.7
                         Layout.alignment: Qt.AlignHCenter
-                        source: (weatherData && weatherData.weatherData.daily) ? weatherData.asingicon(weatherData.weatherData.daily.weather_code[dayIndex]) : ""
 
-                        TapHandler {
+                        Kirigami.Icon {
+                            anchors.fill: parent
+                            source: rootItem.dailyData ? weatherData.asingicon(rootItem.dailyData.weather_code[dayIndex]) : ""
+                        }
+
+                        MouseArea {
+                            id: dayMouse
+                            anchors.fill: parent
+                            hoverEnabled: rootItem.hasHourlyData
                             enabled: rootItem.hasHourlyData
-                            onTapped: rootItem.openDayDetail(dayIndex)
+                            cursorShape: rootItem.hasHourlyData ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: rootItem.openDayDetail(dayIndex)
                         }
                     }
 
@@ -300,12 +358,12 @@ Item {
                         Layout.alignment: Qt.AlignHCenter
                         spacing: 4
                         PlasmaComponents3.Label {
-                            text: (weatherData && weatherData.weatherData.daily) ? Math.round(weatherData.weatherData.daily.temperature_2m_max[dayIndex]) + "°" : ""
+                            text: rootItem.dailyData ? Math.round(rootItem.dailyData.temperature_2m_max[dayIndex]) + "°" : ""
                             font.bold: true
                             font.pixelSize: Kirigami.Units.gridUnit * 0.75
                         }
                         PlasmaComponents3.Label {
-                            text: (weatherData && weatherData.weatherData.daily) ? Math.round(weatherData.weatherData.daily.temperature_2m_min[dayIndex]) + "°" : ""
+                            text: rootItem.dailyData ? Math.round(rootItem.dailyData.temperature_2m_min[dayIndex]) + "°" : ""
                             opacity: 0.6
                             font.pixelSize: Kirigami.Units.gridUnit * 0.75
                         }
@@ -322,46 +380,36 @@ Item {
                 Layout.rightMargin: Kirigami.Units.gridUnit * 0.5
                 spacing: 0
 
-                DetailColumn {
-                    visible: !!root.showApparentTemp
-                    label: i18n("Apparent Temp")
-                    value: (weatherData && weatherData.apparentTemp !== "--") ? (weatherData.apparentTemp + unitStr) : "--"
-                }
+                // Même principe que pour "quickStats" : on filtre les éléments
+                // visibles puis on les enchaîne avec un séparateur entre
+                // chaque paire. Avant, chaque séparateur portait une condition
+                // manuelle du type "showA && (showB || showC || showD)",
+                // fragile dès qu'une option de configuration changeait.
+                readonly property var visibleDetails: [
+                    { label: i18n("Apparent Temp"), value: (weatherData && weatherData.apparentTemp !== "--") ? (weatherData.apparentTemp + unitStr) : "--", show: !!root.showApparentTemp },
+                    { label: i18n("Humidity"),      value: (weatherData && weatherData.humidity !== "--") ? (weatherData.humidity + "%") : "--", show: !!root.showHumidity },
+                    { label: i18n("UV Index"),      value: (weatherData && weatherData.uvIndex !== "--") ? weatherData.uvIndex : "--", show: !!root.showUVIndex },
+                    { label: i18n("Wind"),          value: (weatherData && weatherData.windSpeed !== "--") ? (weatherData.windSpeed + (unitStr === "°C" ? " km/h" : " mph")) : "--", show: !!root.showWind }
+                ].filter(function (d) { return d.show; })
 
-                Rectangle {
-                    visible: !!(root.showApparentTemp && (root.showHumidity || root.showUVIndex || root.showWind))
-                    Layout.preferredWidth: 1; Layout.preferredHeight: Kirigami.Units.gridUnit * 1.2;
-                    color: Kirigami.Theme.textColor; opacity: 0.15; Layout.alignment: Qt.AlignVCenter
-                }
-
-                DetailColumn {
-                    visible: !!root.showHumidity
-                    label: i18n("Humidity")
-                    value: (weatherData && weatherData.humidity !== "--") ? (weatherData.humidity + "%") : "--"
-                }
-
-                Rectangle {
-                    visible: !!(root.showHumidity && (root.showUVIndex || root.showWind))
-                    Layout.preferredWidth: 1; Layout.preferredHeight: Kirigami.Units.gridUnit * 1.2;
-                    color: Kirigami.Theme.textColor; opacity: 0.15; Layout.alignment: Qt.AlignVCenter
-                }
-
-                DetailColumn {
-                    visible: !!root.showUVIndex
-                    label: i18n("UV Index")
-                    value: (weatherData && weatherData.uvIndex !== "--") ? weatherData.uvIndex : "--"
-                }
-
-                Rectangle {
-                    visible: !!(root.showUVIndex && root.showWind)
-                    Layout.preferredWidth: 1; Layout.preferredHeight: Kirigami.Units.gridUnit * 1.2;
-                    color: Kirigami.Theme.textColor; opacity: 0.15; Layout.alignment: Qt.AlignVCenter
-                }
-
-                DetailColumn {
-                    visible: !!root.showWind
-                    label: i18n("Wind")
-                    value: (weatherData && weatherData.windSpeed !== "--") ? (weatherData.windSpeed + (unitStr === "°C" ? " km/h" : " mph")) : "--"
+                Repeater {
+                    model: detailsRow.visibleDetails
+                    delegate: RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 0
+                        Rectangle {
+                            visible: index > 0
+                            Layout.preferredWidth: 1
+                            Layout.preferredHeight: Kirigami.Units.gridUnit * 1.2
+                            color: Kirigami.Theme.textColor
+                            opacity: 0.15
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+                        DetailColumn {
+                            label: modelData.label
+                            value: modelData.value
+                        }
+                    }
                 }
             }
         }
@@ -373,51 +421,25 @@ Item {
             id: dayDetailView
             anchors.fill: parent
             spacing: 0
-            visible: rootItem.selectedDayIndex !== -1
+
+            opacity: rootItem.selectedDayIndex !== -1 ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
             readonly property string dayLabelFull: {
-                if (!weatherData || !weatherData.weatherData || !weatherData.weatherData.daily || rootItem.selectedDayIndex < 0) return "";
-                let d = new Date(weatherData.weatherData.daily.time[rootItem.selectedDayIndex]);
+                if (!rootItem.dailyData || rootItem.selectedDayIndex < 0) return "";
+                let d = new Date(rootItem.dailyData.time[rootItem.selectedDayIndex]);
                 let locale = Qt.locale();
                 return d.toLocaleString(locale, "dddd");
             }
 
-            readonly property var activeValues: {
-                switch (rootItem.activeChart) {
-                    case 0: return rootItem.hourlySlice("temperature_2m");
-                    case 1: return rootItem.hourlySlice("relative_humidity_2m");
-                    case 2: return rootItem.hourlySlice("wind_speed_10m");
-                    case 3: return rootItem.hourlySlice("uv_index");
-                    default: return rootItem.hourlySlice("temperature_2m");
-                }
-            }
-            readonly property string activeUnit: {
-                switch (rootItem.activeChart) {
-                    case 0: return unitStr;
-                    case 1: return "%";
-                    case 2: return (unitStr === "°C" ? " km/h" : " mph");
-                    case 3: return "";
-                    default: return unitStr;
-                }
-            }
-            readonly property string activeLabel: {
-                switch (rootItem.activeChart) {
-                    case 0: return i18n("Temp.");
-                    case 1: return i18n("Hum.");
-                    case 2: return i18n("Wind");
-                    case 3: return i18n("UV Index");
-                    default: return i18n("Temp.");
-                }
-            }
-            readonly property color activeColor: {
-                switch (rootItem.activeChart) {
-                    case 0: return Qt.rgba(0.92, 0.62, 0.15, 1.0);
-                    case 1: return Qt.rgba(0.29, 0.56, 0.88, 1.0); // Nouveau bleu doux (#4A90E2) pour l'Humidité
-                    case 2: return Qt.rgba(0.13, 0.57, 0.64, 1.0); // Bleu Sarcelle / Teal pour le vent
-                    case 3: return Qt.rgba(0.55, 0.25, 0.90, 1.0);
-                    default: return Qt.rgba(1.0, 0.38, 0.18, 1.0);
-                }
-            }
+            // Toutes les infos de la courbe active proviennent désormais de
+            // "rootItem.chartDefs" — une seule source, plus de switch/case.
+            readonly property var activeDef: rootItem.chartDefs[rootItem.activeChart]
+            readonly property var activeValues: rootItem.hourlySlice(activeDef.field)
+            readonly property string activeUnit: activeDef.unit
+            readonly property string activeLabel: activeDef.label
+            readonly property color activeColor: activeDef.color
 
             RowLayout {
                 id: navigationHeader
@@ -484,8 +506,8 @@ Item {
                 unit:        dayDetailView.activeUnit
                 values:      dayDetailView.activeValues
                 lineColor:   dayDetailView.activeColor
-                // currentHour est désormais géré en interne par LineChart.qml
-                // via un Timer qui se rafraîchit chaque minute. Ne pas surcharger ici.
+                // currentHour est géré en interne par LineChart.qml via un
+                // Timer qui se rafraîchit chaque minute. Ne pas surcharger ici.
 
                 preciseTemp: root.preciseTempChart
                 chartType:   rootItem.activeChart
@@ -511,6 +533,7 @@ Item {
                     color: isActive
                     ? Qt.rgba(tabColor.r, tabColor.g, tabColor.b, 0.20)
                     : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.06)
+                    Behavior on color { ColorAnimation { duration: 150 } }
 
                     Rectangle {
                         visible: parent.isActive
@@ -530,6 +553,7 @@ Item {
                         font.bold: parent.isActive
                         color: parent.isActive ? parent.tabColor : Kirigami.Theme.textColor
                         opacity: parent.isActive ? 1.0 : 0.55
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
                     }
 
                     TapHandler {
@@ -537,25 +561,13 @@ Item {
                     }
                 }
 
-                ChartTab {
-                    tabLabel: i18n("Temp.")
-                    tabIndex: 0
-                    tabColor: Qt.rgba(0.92, 0.62, 0.15, 1.0)
-                }
-                ChartTab {
-                    tabLabel: i18n("Hum.")
-                    tabIndex: 1
-                    tabColor: Qt.rgba(0.29, 0.56, 0.88, 1.0) // Nouveau bleu doux (#4A90E2)
-                }
-                ChartTab {
-                    tabLabel: i18n("Wind")
-                    tabIndex: 2
-                    tabColor: Qt.rgba(0.13, 0.57, 0.64, 1.0) // Bleu Sarcelle / Teal
-                }
-                ChartTab {
-                    tabLabel: i18n("UV")
-                    tabIndex: 3
-                    tabColor: Qt.rgba(0.55, 0.25, 0.90, 1.0) // Violet
+                Repeater {
+                    model: rootItem.chartDefs
+                    delegate: ChartTab {
+                        tabLabel: modelData.tabLabel
+                        tabIndex: index
+                        tabColor: modelData.color
+                    }
                 }
             }
         }
@@ -564,21 +576,66 @@ Item {
     component CompactGridItem : ColumnLayout {
         property string label: ""
         property string value: ""
-        spacing: 0
+        spacing: 1
         Layout.preferredWidth: Kirigami.Units.gridUnit * 2.2
+
         PlasmaComponents3.Label {
             text: parent.label
-            font.pixelSize: Kirigami.Units.gridUnit * 0.5
-            opacity: 0.6
+            font.pixelSize: Kirigami.Units.gridUnit * 0.50
+            opacity: 0.55
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
         }
-        PlasmaComponents3.Label {
-            text: parent.value
-            font.pixelSize: Kirigami.Units.gridUnit * 0.65
-            font.bold: true
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
+        Row {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 0
+            readonly property var _split: {
+                let v = parent.value;
+                let m = v.match(/^(-?\d+(?:\.\d+)?)\s*(.+)$/);
+                return m ? { num: m[1], unit: m[2] } : { num: v, unit: "" };
+            }
+            // unit type: "degree" for °C/°F, "percent" for %, "speed" for km/h mph
+            readonly property string _unitType: {
+                let u = _split.unit;
+                if (u === "°C" || u === "°F") return "degree";
+                if (u === "%") return "percent";
+                return "speed";
+            }
+            PlasmaComponents3.Label {
+                id: compactNumLabel
+                text: parent._split.num
+                font.pixelSize: Kirigami.Units.gridUnit * 0.68
+                font.bold: true
+            }
+            // Degree → haut, taille lisible, vraiment au-dessus du centre
+            PlasmaComponents3.Label {
+                visible: parent._unitType === "degree"
+                text: parent._split.unit
+                font.pixelSize: Kirigami.Units.gridUnit * 0.52
+                font.bold: true
+                leftPadding: 2
+                anchors.bottom: compactNumLabel.top
+                anchors.bottomMargin: -Kirigami.Units.gridUnit * 0.75
+            }
+            // Percent → légèrement sous le centre, gap à gauche
+            PlasmaComponents3.Label {
+                visible: parent._unitType === "percent"
+                text: parent._split.unit
+                font.pixelSize: Kirigami.Units.gridUnit * 0.48
+                font.bold: true
+                leftPadding: 3
+                anchors.verticalCenter: compactNumLabel.verticalCenter
+                anchors.verticalCenterOffset: -Kirigami.Units.gridUnit * 0.01
+            }
+            // Speed (km/h, mph) → baseline-aligned, small gap
+            PlasmaComponents3.Label {
+                visible: parent._unitType === "speed"
+                text: parent._split.unit
+                font.pixelSize: Kirigami.Units.gridUnit * 0.50
+                font.bold: true
+                leftPadding: 2
+                anchors.baseline: compactNumLabel.baseline
+            }
         }
     }
 
@@ -586,19 +643,61 @@ Item {
         property string label: ""
         property string value: ""
         Layout.fillWidth: true
-        spacing: 0
+        spacing: 1
+
         PlasmaComponents3.Label {
             text: parent.label
-            font.pixelSize: Kirigami.Units.gridUnit * 0.55
+            font.pixelSize: Kirigami.Units.gridUnit * 0.52
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
-            opacity: 0.7
+            opacity: 0.60
         }
-        PlasmaComponents3.Label {
-            text: parent.value
-            font.pixelSize: Kirigami.Units.gridUnit * 0.70
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
+        Row {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 0
+            readonly property var _split: {
+                let v = parent.value;
+                let m = v.match(/^(-?\d+(?:\.\d+)?)\s*(.+)$/);
+                return m ? { num: m[1], unit: m[2] } : { num: v, unit: "" };
+            }
+            readonly property string _unitType: {
+                let u = _split.unit;
+                if (u === "°C" || u === "°F") return "degree";
+                if (u === "%") return "percent";
+                return "speed";
+            }
+            PlasmaComponents3.Label {
+                id: detailNumLabel
+                text: parent._split.num
+                font.pixelSize: Kirigami.Units.gridUnit * 0.72
+                font.bold: true
+            }
+            PlasmaComponents3.Label {
+                visible: parent._unitType === "degree"
+                text: parent._split.unit
+                font.pixelSize: Kirigami.Units.gridUnit * 0.48
+                font.bold: true
+                leftPadding: 2
+                anchors.verticalCenter: detailNumLabel.verticalCenter
+                anchors.verticalCenterOffset: -Kirigami.Units.gridUnit * 0.10
+            }
+            PlasmaComponents3.Label {
+                visible: parent._unitType === "percent"
+                text: parent._split.unit
+                font.pixelSize: Kirigami.Units.gridUnit * 0.50
+                font.bold: true
+                leftPadding: 3
+                anchors.verticalCenter: detailNumLabel.verticalCenter
+                anchors.verticalCenterOffset: Kirigami.Units.gridUnit * 0.06
+            }
+            PlasmaComponents3.Label {
+                visible: parent._unitType === "speed"
+                text: parent._split.unit
+                font.pixelSize: Kirigami.Units.gridUnit * 0.53
+                font.bold: true
+                leftPadding: 2
+                anchors.baseline: detailNumLabel.baseline
+            }
         }
     }
 }
