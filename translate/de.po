@@ -1,67 +1,67 @@
-# Translation of Minimalist Weather Animated in Dutch
+# Translation of Minimalist Weather Animated in German
 # Copyright (C) 2026
 msgid ""
 msgstr ""
 "Project-Id-Version: Minimalist Weather Animated\n"
 "Report-Msgid-Bugs-To: https://github.com/Samy879/minimalist-weather-animated/issues\n"
 "POT-Creation-Date: 2026-05-12 00:00+0300\n"
-"PO-Revision-Date: 2026-06-16 17:49+0200\n"
-"Language-Team: Dutch <nl@li.org>\n"
-"Language: nl\n"
+"PO-Revision-Date: 2026-06-17 19:43+0200\n"
+"Language-Team: German\n"
+"Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 msgid "Clear"
-msgstr "Helder"
+msgstr "Klar"
 
 msgid "Cloudy"
-msgstr "Bewolkt"
+msgstr "Bewölkt"
 
 msgid "Drizzle"
-msgstr "Motregen"
+msgstr "Nieselregen"
 
 msgid "Rain"
 msgstr "Regen"
 
 msgid "Snow"
-msgstr "Sneeuw"
+msgstr "Schnee"
 
 msgid "Hail"
 msgstr "Hagel"
 
 msgid "Showers"
-msgstr "Buien"
+msgstr "Schauer"
 
 msgid "Storm"
-msgstr "Storm"
+msgstr "Gewitter"
 
 msgid "Apparent Temp"
-msgstr "Gevoel"
+msgstr "Gef."
 
 msgid "Humidity"
-msgstr "Vochtigheid"
+msgstr "Luftfeuchtigkeit"
 
 msgid "UV Index"
-msgstr "UV-index"
+msgstr "UV-Index"
 
 msgid "Wind"
 msgstr "Wind"
 
 msgid "General"
-msgstr "Algemeen"
+msgstr "Allgemein"
 
 msgid "Automatic Location (IP):"
-msgstr "Automatische locatie (IP):"
+msgstr "Automatische Standortbestimmung (IP):"
 
 msgid "Latitude:"
-msgstr "Breedtegraad:"
+msgstr "Breitengrad:"
 
 msgid "Longitude:"
-msgstr "Lengtegraad:"
+msgstr "Längengrad:"
 
 msgid "Temperature & Speed Unit:"
-msgstr "Temperatuur en Snelheid Eenheid:"
+msgstr "Temperatur- & Geschwindigkeitseinheit:"
 
 msgid "(°C) / (km/h)"
 msgstr "(°C) / (km/h)"
@@ -70,61 +70,61 @@ msgid "(°F) / (mph)"
 msgstr "(°F) / (mph)"
 
 msgid "Update Interval (min):"
-msgstr "Update-interval (min):"
+msgstr "Aktualisierungsintervall (min):"
 
 msgid "Show temperature:"
-msgstr "Temperatuur tonen:"
+msgstr "Temperatur anzeigen:"
 
 msgid "Show condition text:"
-msgstr "Conditietekst tonen:"
+msgstr "Wetterbedingung anzeigen:"
 
 msgid "Show condition text (panel):"
-msgstr "Conditietekst tonen (paneel):"
+msgstr "Wetterbedingung anzeigen (Panel):"
 
 msgid "Show condition text (Full view):"
-msgstr "Conditietekst tonen (Volledige weergave):"
+msgstr "Wetterbedingung anzeigen (Vollansicht):"
 
 msgid "Show decimals (only panel):"
-msgstr "Decimalen tonen (alleen paneel):"
+msgstr "Dezimalstellen anzeigen (nur Panel):"
 
 msgid "Show decimals on charts:"
-msgstr "Decimalen tonen op grafieken:"
+msgstr "Dezimalstellen in Diagrammen anzeigen:"
 
 msgid "Reverse Temp/Condition order:"
-msgstr "Volgorde Temp/Conditie omkeren:"
+msgstr "Reihenfolge Temp/Bedingung umkehren:"
 
 msgid "Border radius (desktop view):"
-msgstr "Randradius (desktop weergave):"
+msgstr "Eckenradius (Desktop-Ansicht):"
 
 msgid "Temperature font size:"
-msgstr "Lettergrootte temperatuur:"
+msgstr "Schriftgröße der Temperatur:"
 
 msgid "Bold temperature:"
-msgstr "Vetgedrukte temperatuur:"
+msgstr "Temperatur fett gedruckt:"
 
 msgid "Condition font size:"
-msgstr "Lettergrootte conditie:"
+msgstr "Schriftgröße der Bedingung:"
 
 msgid "Bold condition text:"
-msgstr "Vetgedrukte conditietekst:"
+msgstr "Bedingungstext fett gedruckt:"
 
 msgid "Details to show:"
-msgstr "Te tonen details:"
+msgstr "Anzuzeigende Details:"
 
 msgid "Apparent Temperature"
-msgstr "Gevoelstemperatuur"
+msgstr "Gefühlte Temperatur"
 
 msgid "Wind Speed"
-msgstr "Windsnelheid"
+msgstr "Windgeschwindigkeit"
 
 msgid "Forecast start day offset:"
-msgstr "Startdag offset voorspelling:"
+msgstr "Verschiebung des Vorhersage-Starttags:"
 
 msgid "Feels"
-msgstr "Gevoel"
+msgstr "Gef."
 
 msgid "Hum."
-msgstr "Vocht."
+msgstr "Feucht."
 
 msgid "UV"
 msgstr "UV"
@@ -133,10 +133,10 @@ msgid "Temp."
 msgstr "Temp."
 
 msgid "Enable weather animations:"
-msgstr "Weeranimaties inschakelen:"
+msgstr "Wetteranimationen aktivieren:"
 
 msgid "Refresh Weather Data"
-msgstr "Weergegevens vernieuwen"
+msgstr "Wetterdaten aktualisieren"
 
 msgid "Manual Actions:"
-msgstr "Handmatige acties:"
+msgstr "Manuelle Aktionen:"

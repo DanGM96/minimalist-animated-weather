@@ -12,7 +12,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-
 msgid "Clear"
 msgstr "晴れ"
 
@@ -38,7 +37,7 @@ msgid "Storm"
 msgstr "嵐"
 
 msgid "Apparent Temp"
-msgstr "体感温度"
+msgstr "体感"
 
 msgid "Humidity"
 msgstr "湿度"

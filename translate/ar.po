@@ -1,0 +1,142 @@
+# Translation of Minimalist Weather Animated in Arabic
+# Copyright (C) 2026
+msgid ""
+msgstr ""
+"Project-Id-Version: Minimalist Weather Animated\n"
+"Report-Msgid-Bugs-To: https://github.com/Samy879/minimalist-weather-animated/issues\n"
+"POT-Creation-Date: 2026-05-12 00:00+0300\n"
+"PO-Revision-Date: 2026-06-17 19:43+0200\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Clear"
+msgstr "صافٍ"
+
+msgid "Cloudy"
+msgstr "غائم"
+
+msgid "Drizzle"
+msgstr "رذاذ"
+
+msgid "Rain"
+msgstr "مطر"
+
+msgid "Snow"
+msgstr "ثلج"
+
+msgid "Hail"
+msgstr "بَرَد"
+
+msgid "Showers"
+msgstr "زخات"
+
+msgid "Storm"
+msgstr "عاصفة"
+
+msgid "Apparent Temp"
+msgstr "ملموسة"
+
+msgid "Humidity"
+msgstr "الرطوبة"
+
+msgid "UV Index"
+msgstr "مؤشر الأشعة فوق البنفسجية"
+
+msgid "Wind"
+msgstr "الرياح"
+
+msgid "General"
+msgstr "عام"
+
+msgid "Automatic Location (IP):"
+msgstr "الموقع التلقائي (IP):"
+
+msgid "Latitude:"
+msgstr "خط العرض:"
+
+msgid "Longitude:"
+msgstr "خط الطول:"
+
+msgid "Temperature & Speed Unit:"
+msgstr "وحدة الحرارة والسرعة:"
+
+msgid "(°C) / (km/h)"
+msgstr "(°C) / (km/h)"
+
+msgid "(°F) / (mph)"
+msgstr "(°F) / (mph)"
+
+msgid "Update Interval (min):"
+msgstr "فترة التحديث (بالدقائق):"
+
+msgid "Show temperature:"
+msgstr "إظهار درجة الحرارة:"
+
+msgid "Show condition text:"
+msgstr "إظهار نص الحالة الطقسية:"
+
+msgid "Show condition text (panel):"
+msgstr "إظهار نص الحالة الطقسية (اللوحة):"
+
+msgid "Show condition text (Full view):"
+msgstr "إظهار نص الحالة الطقسية (العرض الكامل):"
+
+msgid "Show decimals (only panel):"
+msgstr "إظهار الخانات العشرية (في اللوحة فقط):"
+
+msgid "Show decimals on charts:"
+msgstr "إظهار الخانات العشرية على الرسوم البيانية:"
+
+msgid "Reverse Temp/Condition order:"
+msgstr "عكس ترتيب الحرارة/الحالة:"
+
+msgid "Border radius (desktop view):"
+msgstr "نصف قطر الحدود (عرض سطح المكتب):"
+
+msgid "Temperature font size:"
+msgstr "حجم خط درجة الحرارة:"
+
+msgid "Bold temperature:"
+msgstr "درجة الحرارة بخط عريض:"
+
+msgid "Condition font size:"
+msgstr "حجم خط الحالة الطقسية:"
+
+msgid "Bold condition text:"
+msgstr "نص الحالة بخط عريض:"
+
+msgid "Details to show:"
+msgstr "التفاصيل المراد إظهارها:"
+
+msgid "Apparent Temperature"
+msgstr "الحرارة الظاهرية"
+
+msgid "Wind Speed"
+msgstr "سرعة الرياح"
+
+msgid "Forecast start day offset:"
+msgstr "إزاحة يوم بدء التوقعات:"
+
+msgid "Feels"
+msgstr "ملموسة"
+
+msgid "Hum."
+msgstr "رطوبة"
+
+msgid "UV"
+msgstr "UV"
+
+msgid "Temp."
+msgstr "حرارة"
+
+msgid "Enable weather animations:"
+msgstr "تفعيل حركات الطقس:"
+
+msgid "Refresh Weather Data"
+msgstr "تحديث بيانات الطقس"
+
+msgid "Manual Actions:"
+msgstr "إجراءات يدوية:"

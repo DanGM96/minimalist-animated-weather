@@ -5,6 +5,8 @@
             { "Email": "adolfo@librepixels.com", "Name": "zayronxio (Original Author)" }
         ],
         "Name": "Minimalist Weather Animated",
+        "Name[ar]": "Minimalist Weather Animated",
+        "Name[de]": "Minimalist Weather Animated",
         "Name[es]": "Minimalist Weather Animated",
         "Name[fr]": "Minimalist Weather Animated",
         "Name[ja]": "Minimalist Weather Animated",
@@ -18,6 +20,8 @@
         "Id": "com.github.samy879.minimalist-weather-animated",
 
         "Description": "An animated weather widget for KDE Plasma 6.",
+        "Description[ar]": "أداة طقس متحركة لـ KDE Plasma 6.",
+        "Description[de]": "Ein animiertes Wetter-Widget für KDE Plasma 6.",
         "Description[es]": "Un widget de clima animado para KDE Plasma 6.",
         "Description[fr]": "Un widget météo animé pour KDE Plasma 6.",
         "Description[ja]": "KDE Plasma 6 用のアニメーション化された天気ウィジェット。",

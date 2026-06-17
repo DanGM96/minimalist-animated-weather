@@ -37,7 +37,7 @@ msgid "Storm"
 msgstr "Tempestade"
 
 msgid "Apparent Temp"
-msgstr "Sensação"
+msgstr "Sens."
 
 msgid "Humidity"
 msgstr "Humidade"

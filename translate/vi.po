@@ -12,7 +12,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-
 msgid "Clear"
 msgstr "Trời trong"
 
@@ -38,7 +37,7 @@ msgid "Storm"
 msgstr "Bão"
 
 msgid "Apparent Temp"
-msgstr "Cảm giác"
+msgstr "C.giác"
 
 msgid "Humidity"
 msgstr "Độ ẩm"
@@ -122,16 +121,16 @@ msgid "Forecast start day offset:"
 msgstr "Bù ngày bắt đầu dự báo:"
 
 msgid "Feels"
-msgstr "Cảm giác"
+msgstr "C.giác"
 
 msgid "Hum."
-msgstr "Độ ẩm"
+msgstr "Đ.ẩm"
 
 msgid "UV"
 msgstr "UV"
 
 msgid "Temp."
-msgstr "Nhiệt độ"
+msgstr "N.độ"
 
 msgid "Enable weather animations:"
 msgstr "Bật hiệu ứng thời tiết:"

@@ -77,9 +77,9 @@ Item {
     readonly property real minV: arrMin(values)
     readonly property real maxV: arrMax(values)
 
-    // Marges asymétriques (identiques à l'original)
+    // Marges asymétriques
     readonly property real padLeft:   Kirigami.Units.gridUnit * 1.5
-    readonly property real padRight:  Kirigami.Units.gridUnit * 0.7
+    readonly property real padRight:  Kirigami.Units.gridUnit * 1.0 // Ajusté pour éviter de rogner le texte centré
     readonly property real padTop:    Kirigami.Units.gridUnit * 0.6
     readonly property real padBottom: Kirigami.Units.gridUnit * 1.2
 
@@ -275,6 +275,16 @@ Item {
                 let textColor = Kirigami.Theme.textColor;
                 let bgColor   = Kirigami.Theme.backgroundColor;
 
+                // --- CALCUL DE L'INDEX ACTIF (Remonté ici pour l'axe X) ---
+                let curIdx;
+                if (chartRoot.hoverIndex !== -1) {
+                    curIdx = chartRoot.hoverIndex;
+                } else if (chartRoot.isToday) {
+                    curIdx = Math.max(0, Math.min(chartRoot.currentHour, n - 1));
+                } else {
+                    curIdx = -1; // jour passé/futur : pas de marqueur "maintenant"
+                }
+
                 // Un même alpha ne donne pas le même contraste perçu selon que
                 // le fond est clair ou sombre (sensibilité au contraste de
                 // l'œil + nombreux thèmes clairs avec un fond très lumineux où
@@ -283,12 +293,10 @@ Item {
                 // valeur unique qui ne marche bien que sur un thème sombre.
                 let bgLuminance = 0.2126 * bgColor.r + 0.7152 * bgColor.g + 0.0722 * bgColor.b;
                 let isLightTheme = bgLuminance > 0.5;
-
                 let axisOpacity  = 0.35;                          // axe X plein + ticks
                 let gridOpacity  = isLightTheme ? 0.22 : 0.12;     // grille horizontale en pointillés
                 let guideOpacity = isLightTheme ? 0.34 : 0.22;     // ligne verticale du marqueur
                 let labelOpacity = 0.80;
-
                 function xAt(i) { return pL + (w - pL - pR) * (i / (n - 1)); }
                 function yAt(v) { return pT + (h - pT - pB) * (1 - (v - chartRoot.minV) / range); }
 
@@ -331,8 +339,7 @@ Item {
                             ctx.setLineDash([]);
                         }
 
-                        let labelText = chartRoot.preciseTemp ?
-                        parseFloat(v.toFixed(1)).toString() : Math.round(v).toString();
+                        let labelText = chartRoot.preciseTemp ? parseFloat(v.toFixed(1)).toString() : Math.round(v).toString();
                         let fontSize = Math.round(Kirigami.Units.gridUnit * 0.48);
                         ctx.font = fontSize + "px sans-serif";
                         ctx.fillStyle = Qt.rgba(textColor.r, textColor.g, textColor.b, labelOpacity);
@@ -346,10 +353,8 @@ Item {
                 }
 
                 // --- Axe X + ligne de base ---
-                // BUG FIX : avant [0, 6, 12, 18, 24] où "24h" était placé à
-                // l'index 23 (= 23h réels), ce qui décalait visuellement tous
-                // les repères. Maintenant : [0, 6, 12, 18] — propre, exact.
-                function drawXAxis() {
+                // Maintenant : prend en compte l'index actif pour éviter les collisions
+                function drawXAxis(activeIdx) {
                     let xLabels = [0, 6, 12, 18];
                     let xFontSize = Math.round(Kirigami.Units.gridUnit * 0.45);
                     ctx.font = xFontSize + "px sans-serif";
@@ -358,14 +363,20 @@ Item {
                         let xx = xAt(xi);
                         let lbl = xi + "h";
 
-                        ctx.textAlign = xi === 0 ? "left" : "center";
-                        ctx.textBaseline = "top";
-                        ctx.fillStyle = Qt.rgba(textColor.r, textColor.g, textColor.b, labelOpacity);
-                        ctx.shadowColor = Qt.rgba(bgColor.r, bgColor.g, bgColor.b, 0.85);
-                        ctx.shadowBlur = 3;
-                        ctx.fillText(lbl, xx, h - pB + 4);
-                        ctx.shadowBlur = 0;
+                        // DÉTECTION DE COLLISION : on masque si l'heure fixe est à <= 1 heure de l'heure active
+                        let isTooClose = activeIdx !== -1 && Math.abs(xi - activeIdx) <= 1;
 
+                        if (!isTooClose) {
+                            ctx.textAlign = "center";
+                            ctx.textBaseline = "top";
+                            ctx.fillStyle = Qt.rgba(textColor.r, textColor.g, textColor.b, labelOpacity);
+                            ctx.shadowColor = Qt.rgba(bgColor.r, bgColor.g, bgColor.b, 0.85);
+                            ctx.shadowBlur = 3;
+                            ctx.fillText(lbl, xx, h - pB + 4);
+                            ctx.shadowBlur = 0;
+                        }
+
+                        // On dessine toujours le petit trait repère
                         ctx.strokeStyle = Qt.rgba(textColor.r, textColor.g, textColor.b, axisOpacity);
                         ctx.lineWidth = 0.5;
                         ctx.beginPath();
@@ -427,35 +438,28 @@ Item {
                     ctx.setLineDash([]);
 
                     // Étiquette dynamique de l'heure pointée par la ligne
-                    // verticale ci-dessus — uniquement si cette heure ne
-                    // correspond pas déjà à un repère fixe (0h/6h/12h/18h),
-                    // pour ne pas faire doublon avec le libellé déjà dessiné
-                    // par drawXAxis(). Elle suit donc exactement la ligne en
-                    // pointillés, et se déplace avec le point survolé/courant.
-                    if ([0, 6, 12, 18].indexOf(curIdx) === -1) {
-                        let hourLbl = curIdx + "h";
-                        let hourFontSize = Math.round(Kirigami.Units.gridUnit * 0.45);
-                        ctx.font = hourFontSize + "px sans-serif";
-                        ctx.textAlign = cx < pL + 18 ? "left" : (cx > w - pR - 18 ? "right" : "center");
-                        ctx.textBaseline = "top";
-                        ctx.fillStyle = Qt.rgba(textColor.r, textColor.g, textColor.b, labelOpacity);
-                        ctx.shadowColor = Qt.rgba(bgColor.r, bgColor.g, bgColor.b, 0.85);
-                        ctx.shadowBlur = 3;
-                        ctx.fillText(hourLbl, cx, h - pB + 4);
-                        ctx.shadowBlur = 0;
+                    // verticale ci-dessus — affichée EN PERMANENCE désormais.
+                    let hourLbl = curIdx + "h";
+                    let hourFontSize = Math.round(Kirigami.Units.gridUnit * 0.45);
+                    ctx.font = hourFontSize + "px sans-serif";
 
-                        // Petit repère en pointillés sur l'axe, pour le
-                        // distinguer visuellement des traits pleins des
-                        // heures fixes.
-                        ctx.strokeStyle = Qt.rgba(textColor.r, textColor.g, textColor.b, axisOpacity);
-                        ctx.lineWidth = 0.8;
-                        ctx.setLineDash([1, 2]);
-                        ctx.beginPath();
-                        ctx.moveTo(cx, h - pB);
-                        ctx.lineTo(cx, h - pB + 3);
-                        ctx.stroke();
-                        ctx.setLineDash([]);
-                    }
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "top";
+                    ctx.fillStyle = Qt.rgba(textColor.r, textColor.g, textColor.b, labelOpacity);
+                    ctx.shadowColor = Qt.rgba(bgColor.r, bgColor.g, bgColor.b, 0.85);
+                    ctx.shadowBlur = 3;
+                    ctx.fillText(hourLbl, cx, h - pB + 4);
+                    ctx.shadowBlur = 0;
+
+                    // Petit repère en pointillés sur l'axe
+                    ctx.strokeStyle = Qt.rgba(textColor.r, textColor.g, textColor.b, axisOpacity);
+                    ctx.lineWidth = 0.8;
+                    ctx.setLineDash([1, 2]);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, h - pB);
+                    ctx.lineTo(cx, h - pB + 3);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
 
                     // Halo du point
                     ctx.fillStyle = strokeStyle;
@@ -483,6 +487,8 @@ Item {
                     let fontSize = Math.round(Kirigami.Units.gridUnit * 0.55);
                     ctx.font = "bold " + fontSize + "px sans-serif";
 
+                    // On conserve ici la logique "left"/"right" pour la valeur numérique
+                    // de la température, pour éviter qu'elle ne chevauche le point.
                     let alignText = curIdx === 0 ? "left" : (curIdx === n - 1 ? "right" : "center");
                     let isNearTop = cy < pT + 25;
                     ctx.textBaseline = isNearTop ? "top" : "bottom";
@@ -504,11 +510,10 @@ Item {
                 let defaultColorStr = Math.round(chartRoot.lineColor.r * 255) + "," +
                 Math.round(chartRoot.lineColor.g * 255) + "," +
                 Math.round(chartRoot.lineColor.b * 255);
-
                 let palette = chartRoot.paletteFor(chartRoot.chartType, chartRoot.unit);
 
                 drawYGrid();
-                drawXAxis();
+                drawXAxis(curIdx);
 
                 let baseColorStr = palette ? palette.fillColor(chartRoot.maxV) : defaultColorStr;
                 drawAreaFill(baseColorStr);
@@ -524,14 +529,6 @@ Item {
                 }
                 drawCurveLine(strokeStyle);
 
-                let curIdx;
-                if (chartRoot.hoverIndex !== -1) {
-                    curIdx = chartRoot.hoverIndex;
-                } else if (chartRoot.isToday) {
-                    curIdx = Math.max(0, Math.min(chartRoot.currentHour, n - 1));
-                } else {
-                    curIdx = -1; // jour passé/futur : pas de marqueur "maintenant"
-                }
                 if (curIdx !== -1) {
                     let pointColorStr = palette ? palette.fillColor(pts[curIdx]) : defaultColorStr;
                     drawMarker(strokeStyle, pointColorStr, curIdx);

@@ -37,7 +37,7 @@ msgid "Storm"
 msgstr "Fırtına"
 
 msgid "Apparent Temp"
-msgstr "Hissedilen"
+msgstr "Hiss."
 
 msgid "Humidity"
 msgstr "Nem"
