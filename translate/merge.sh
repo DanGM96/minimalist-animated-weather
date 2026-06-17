@@ -6,17 +6,18 @@
 # https://invent.kde.org/sysadmin/l10n-scripty/-/blob/master/extract-messages.sh
 
 DIR=`cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd`
-plasmoidName=`kreadconfig5 --file="$DIR/../metadata.desktop" --group="Desktop Entry" --key="X-KDE-PluginInfo-Name"`
-widgetName="${plasmoidName##*.}" # Strip namespace
-website=`kreadconfig5 --file="$DIR/../metadata.desktop" --group="Desktop Entry" --key="X-KDE-PluginInfo-Website"`
-bugAddress="$website"
-packageRoot=".." # Root of translatable sources
-projectName="plasma_applet_${plasmoidName}" # project name
 
-#---
-if [ -z "$plasmoidName" ]; then
-	echo "[merge] Error: Couldn't read plasmoidName."
-	exit
+# Extraction propre depuis metadata.json avec jq
+plasmoidName=$(jq -r '.KPlugin.Id' "$DIR/../metadata.json")
+widgetName=$(jq -r '.KPlugin.Name' "$DIR/../metadata.json")
+website=$(jq -r '.KPlugin.Website' "$DIR/../metadata.json")
+bugAddress="$website/issues"
+packageRoot=".."
+projectName="plasma_applet_${plasmoidName}"
+
+if [ -z "$plasmoidName" ] || [ "$plasmoidName" = "null" ]; then
+    echo "[merge] Erreur: Impossible de lire l'ID dans metadata.json."
+    exit 1
 fi
 
 if [ -z "$(which xgettext)" ]; then

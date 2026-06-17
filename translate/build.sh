@@ -1,53 +1,37 @@
 #!/bin/sh
-# Version: 6
-
-# This script will convert the *.po files to *.mo files, rebuilding the package/contents/locale folder.
-# Feature discussion: https://phabricator.kde.org/D5209
-# Eg: contents/locale/fr_CA/LC_MESSAGES/plasma_applet_org.kde.plasma.eventcalendar.mo
+# Version: 9 (Le retour du préfixe obligatoire de KDE)
 
 DIR=`cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd`
-plasmoidName=`kreadconfig5 --file="$DIR/../metadata.desktop" --group="Desktop Entry" --key="X-KDE-PluginInfo-Name"`
-website=`kreadconfig5 --file="$DIR/../metadata.desktop" --group="Desktop Entry" --key="X-KDE-PluginInfo-Website"`
-bugAddress="$website"
-packageRoot=".." # Root of translatable sources
-projectName="plasma_applet_${plasmoidName}" # project name
 
-#---
+# On extrait l'ID proprement depuis metadata.json
+plasmoidName=$(grep '"Id"' "$DIR/../metadata.json" | cut -d'"' -f4)
+
 if [ -z "$plasmoidName" ]; then
-	echo "[build] Error: Couldn't read plasmoidName."
-	exit
+    echo "[build] Erreur: Impossible de lire l'ID dans metadata.json."
+    exit 1
 fi
+
+# LE VOICI : KDE exige que le fichier .mo commence par "plasma_applet_"
+projectName="plasma_applet_${plasmoidName}"
 
 if [ -z "$(which msgfmt)" ]; then
-	echo "[build] Error: msgfmt command not found. Need to install gettext"
-	echo "[build] Running 'sudo apt install gettext'"
-	sudo apt install gettext
-	echo "[build] gettext installation should be finished. Going back to installing translations."
+    echo "[build] Erreur: msgfmt introuvable."
+    exit 1
 fi
 
-#---
-echo "[build] Compiling messages"
+echo "[build] Nettoyage des anciens fichiers de traduction..."
+rm -rf "$DIR/../contents/locale"/*/LC_MESSAGES/*.mo
 
+echo "[build] Compilation pour le domaine : $projectName"
 catalogs=`find . -name '*.po' | sort`
+
 for cat in $catalogs; do
-	echo "$cat"
-	catLocale=`basename ${cat%.*}`
-	msgfmt -o "${catLocale}.mo" "$cat"
+    catLocale=`basename ${cat%.*}`
+    installPath="$DIR/../contents/locale/${catLocale}/LC_MESSAGES/${projectName}.mo"
 
-	installPath="$DIR/../contents/locale/${catLocale}/LC_MESSAGES/${projectName}.mo"
-
-	echo "[build] Install to ${installPath}"
-	mkdir -p "$(dirname "$installPath")"
-	mv "${catLocale}.mo" "${installPath}"
+    mkdir -p "$(dirname "$installPath")"
+    msgfmt -o "${installPath}" "$cat"
+    echo " -> Généré : $installPath"
 done
 
-echo "[build] Done building messages"
-
-if [ "$1" = "--restartplasma" ]; then
-	echo "[build] Restarting plasmashell"
-	killall plasmashell
-	kstart5 plasmashell
-	echo "[build] Done restarting plasmashell"
-else
-	echo "[build] (re)install the plasmoid and restart plasmashell to test."
-fi
+echo "[build] Compilation terminée avec succès."

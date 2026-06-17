@@ -1,12 +1,12 @@
-# Translation of Minimalist Weather Animated in LANGUAGE
+# Translation of Minimalist Animated Weather in LANGUAGE
 # Copyright (C) 2026
-# This file is distributed under the same license as the Minimalist Weather Animated package.
+# This file is distributed under the same license as the Minimalist Animated Weather package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Minimalist Weather Animated\n"
-"Report-Msgid-Bugs-To: https://github.com/Samy879/minimalist-weather-animated/issues\n"
+"Project-Id-Version: Minimalist Animated Weather\n"
+"Report-Msgid-Bugs-To: https://github.com/Samy879/minimalist-animated-weather/issues\n"
 "POT-Creation-Date: 2026-05-12 00:00+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"

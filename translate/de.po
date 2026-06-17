@@ -1,9 +1,9 @@
-# Translation of Minimalist Weather Animated in German
+# Translation of Minimalist Animated Weather in German
 # Copyright (C) 2026
 msgid ""
 msgstr ""
-"Project-Id-Version: Minimalist Weather Animated\n"
-"Report-Msgid-Bugs-To: https://github.com/Samy879/minimalist-weather-animated/issues\n"
+"Project-Id-Version: Minimalist Animated Weather\n"
+"Report-Msgid-Bugs-To: https://github.com/Samy879/minimalist-animated-weather/issues\n"
 "POT-Creation-Date: 2026-05-12 00:00+0300\n"
 "PO-Revision-Date: 2026-06-17 19:43+0200\n"
 "Language-Team: German\n"
