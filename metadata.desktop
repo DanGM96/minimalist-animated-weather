@@ -10,16 +10,16 @@ Name[tr]=Minimalist Weather Animated
 Name[vi]=Minimalist Weather Animated
 Name[zh_CN]=Minimalist Weather Animated
 
-Comment=A clean, animated weather widget for KDE Plasma 6.
-Comment[es]=Un widget de clima limpio y animado para KDE Plasma 6.
-Comment[fr]=Un widget météo propre et animé pour KDE Plasma 6.
-Comment[ja]=KDE Plasma 6 用のクリーンでアニメーション化された天気ウィジェット。
-Comment[nl]=Een schone, geanimeerde weerwidget voor KDE Plasma 6.
-Comment[pt]=Um widget de clima limpo e animado para o KDE Plasma 6.
-Comment[ru]=Чистый анимированный виджет погоды для KDE Plasma 6.
-Comment[tr]=KDE Plasma 6 için temiz, animasyonlu bir hava durumu widget'ı.
-Comment[vi]=Một widget thời tiết sạch sẽ và sinh động cho KDE Plasma 6.
-Comment[zh_CN]=一个适用于 KDE Plasma 6 的简洁、动画化的天气小组件。
+Comment=An animated weather widget for KDE Plasma 6.
+Comment[es]=Un widget de clima animado para KDE Plasma 6.
+Comment[fr]=Un widget météo animé pour KDE Plasma 6.
+Comment[ja]=KDE Plasma 6 用のアニメーション化された天気ウィジェット。
+Comment[nl]=Een geanimeerde weerwidget voor KDE Plasma 6.
+Comment[pt]=Um widget de clima animado para o KDE Plasma 6.
+Comment[ru]=Анимированный виджет погоды для KDE Plasma 6.
+Comment[tr]=KDE Plasma 6 için animasyonlu bir hava durumu widget'ı.
+Comment[vi]=Một widget thời tiết sinh động cho KDE Plasma 6.
+Comment[zh_CN]=一个适用于 KDE Plasma 6 的动画化天气小组件。
 
 Type=Service
 Icon=weather-clouds
