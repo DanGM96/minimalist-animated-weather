@@ -83,6 +83,186 @@ Item {
     readonly property real padTop:    Kirigami.Units.gridUnit * 0.6
     readonly property real padBottom: Kirigami.Units.gridUnit * 1.2
 
+    // --- CONVERSIONS COULEUR (hex ↔ RGB ↔ HSL) ---
+    // Base commune à colorForValue() (interpolation du dégradé) et à
+    // ensureReadable() (correction de lisibilité en HSL ci-dessous).
+    function hexToRgb(hex) {
+        let h = hex.replace("#", "");
+        if (h.length === 3) {
+            h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        }
+        return {
+            r: parseInt(h.substring(0, 2), 16),
+            g: parseInt(h.substring(2, 4), 16),
+            b: parseInt(h.substring(4, 6), 16)
+        };
+    }
+
+    function rgbToHex(r, g, b) {
+        function toHex(c) {
+            let v = Math.round(Math.max(0, Math.min(255, c)));
+            let s = v.toString(16);
+            return s.length === 1 ? "0" + s : s;
+        }
+        return "#" + toHex(r) + toHex(g) + toHex(b);
+    }
+
+    // "r, g, b" (0-255), format attendu par ensureReadable() et par les
+    // rgba(...) construits dans onPaint.
+    function hexToRgbString(hex) {
+        let c = hexToRgb(hex);
+        return c.r + ", " + c.g + ", " + c.b;
+    }
+
+    function rgbToHsl(r, g, b) {
+        r /= 255; g /= 255; b /= 255;
+        let max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h = 0, s = 0, l = (max + min) / 2;
+
+        if (max !== min) {
+            let d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = ((g - b) / d) % 6; break;
+                case g: h = (b - r) / d + 2; break;
+                default: h = (r - g) / d + 4; break;
+            }
+            h *= 60;
+            if (h < 0) h += 360;
+        }
+        return { h: h, s: s, l: l };
+    }
+
+    function hslToRgb(h, s, l) {
+        let c = (1 - Math.abs(2 * l - 1)) * s;
+        let x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+        let m = l - c / 2;
+        let r = 0, g = 0, b = 0;
+
+        if (h < 60)        { r = c; g = x; b = 0; }
+        else if (h < 120)  { r = x; g = c; b = 0; }
+        else if (h < 180)  { r = 0; g = c; b = x; }
+        else if (h < 240)  { r = 0; g = x; b = c; }
+        else if (h < 300)  { r = x; g = 0; b = c; }
+        else               { r = c; g = 0; b = x; }
+
+        return {
+            r: Math.round((r + m) * 255),
+            g: Math.round((g + m) * 255),
+            b: Math.round((b + m) * 255)
+        };
+    }
+
+    // --- INTERPOLATION CONTINUE DU DÉGRADÉ (stops) ---
+    // Remplace l'ancienne logique à paliers (fillColor()) : la courbe, le
+    // remplissage et le chiffre affiché doivent tous retomber exactement
+    // sur la même couleur pour une même valeur, donc tous calculés via
+    // cette unique fonction plutôt que par un if/else à seuils fixes.
+    //
+    // domain.top    -> position 0 dans stops
+    // domain.bottom -> position 1 dans stops
+    // (mapping identique à celui déjà utilisé par le dégradé vertical du
+    // trait, conservé tel quel).
+    function colorForValue(domain, stops, value) {
+        let span = domain.top - domain.bottom;
+        let pos = span !== 0 ? (domain.top - value) / span : 0;
+        pos = Math.max(0, Math.min(1, pos));
+
+        if (pos <= stops[0][0]) return stops[0][1];
+        let last = stops[stops.length - 1];
+        if (pos >= last[0]) return last[1];
+
+        for (let i = 0; i < stops.length - 1; i++) {
+            let s0 = stops[i], s1 = stops[i + 1];
+            if (pos >= s0[0] && pos <= s1[0]) {
+                let segSpan = s1[0] - s0[0];
+                let t = segSpan > 0 ? (pos - s0[0]) / segSpan : 0;
+                let c0 = hexToRgb(s0[1]);
+                let c1 = hexToRgb(s1[1]);
+                return rgbToHex(
+                    c0.r + (c1.r - c0.r) * t,
+                                c0.g + (c1.g - c0.g) * t,
+                                c0.b + (c1.b - c0.b) * t
+                );
+            }
+        }
+        return last[1]; // sécurité, ne devrait pas être atteint
+    }
+
+    // --- LISIBILITÉ DU CHIFFRE SURVOLÉ ---
+    // Le dégradé de température (entre autres) traverse des teintes très
+    // claires (jaune, orange pâle) qui se distinguent mal sur un fond clair
+    // — alors que ces mêmes couleurs sont parfaitement lisibles sur le trait
+    // de la courbe (épais, antialiasé, entouré de la zone de remplissage).
+    // Plutôt que d'ajouter un contour autour du texte (visuellement lourd,
+    // contraire à l'esprit épuré du widget), on mesure le contraste réel
+    // entre la couleur de la valeur et le fond, et on assombrit/éclaircit
+    // cette couleur — juste assez pour rester lisible — uniquement quand
+    // c'est nécessaire. La teinte d'origine (donc l'identité visuelle de la
+    // courbe) est conservée, seule la luminosité est corrigée.
+    function relativeLuminance(r, g, b) {
+        // r, g, b attendus dans [0, 255]
+        return 0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255);
+    }
+
+    // colorStr : "r, g, b" (0-255). bgLum : luminance du fond (0-1).
+    // Retourne une chaîne "r, g, b" ajustée si besoin pour garder un écart
+    // de luminance suffisant avec le fond.
+    function ensureReadable(colorStr, bgLum) {
+        let parts = colorStr.split(",").map(function (s) { return parseFloat(s); });
+        let r = parts[0], g = parts[1], b = parts[2];
+        let lum = relativeLuminance(r, g, b);
+
+        // Écart minimal jugé confortable à la taille de police utilisée ici
+        // (texte gras, ~0.55 gridUnit) ; en dessous, on corrige.
+        const minDiff = 0.30;
+        let diff = lum - bgLum;
+
+        if (Math.abs(diff) >= minDiff) {
+            return colorStr; // contraste déjà suffisant, on ne touche à rien
+        }
+
+        // Correction en HSL plutôt qu'en RGB direct : modifier r, g, b
+        // indépendamment dérive aussi la teinte (H) et la saturation (S),
+        // ce qui rapprochait visuellement des couleurs censées rester
+        // distinctes (ex: jaune et orange après correction). Ici on ne
+        // fait varier QUE L (luminosité) ; H et S restent strictement
+        // identiques à la couleur d'origine.
+        let hsl = rgbToHsl(r, g, b);
+
+        // On accentue l'écart dans le même sens qu'à l'origine : si le
+        // chiffre est déjà plus clair que le fond on l'éclaircit encore,
+        // s'il est plus sombre on l'assombrit encore — plutôt que de
+        // basculer de l'autre côté du fond.
+        let lighten = (lum >= bgLum);
+        let targetLum = lighten ? Math.min(1, bgLum + minDiff) : Math.max(0, bgLum - minDiff);
+
+        let lo = lighten ? hsl.l : 0;
+        let hi = lighten ? 1 : hsl.l;
+        let bestL = hsl.l;
+
+        // relativeLuminance() pondère R/G/B différemment de la définition
+        // de L en HSL : il n'y a pas de formule inverse directe pour passer
+        // d'une luminance cible à un L exact. On converge donc par
+        // dichotomie (luminance monotone croissante avec L à H,S fixés).
+        for (let i = 0; i < 20; i++) {
+            let mid = (lo + hi) / 2;
+            let rgb = hslToRgb(hsl.h, hsl.s, mid);
+            let midLum = relativeLuminance(rgb.r, rgb.g, rgb.b);
+            bestL = mid;
+            if (lighten) {
+                if (midLum < targetLum) { lo = mid; } else { hi = mid; }
+            } else {
+                if (midLum > targetLum) { hi = mid; } else { lo = mid; }
+            }
+        }
+
+        let finalRgb = hslToRgb(hsl.h, hsl.s, bestL);
+        return Math.round(Math.max(0, Math.min(255, finalRgb.r))) + ", " +
+        Math.round(Math.max(0, Math.min(255, finalRgb.g))) + ", " +
+        Math.round(Math.max(0, Math.min(255, finalRgb.b)));
+    }
+
     // --- PALETTE PAR TYPE DE COURBE ---
     // Avant : la couleur de remplissage (getFillColor) et le dégradé du trait
     // (un bloc if/else par type) étaient deux logiques séparées et dupliquées.
@@ -102,25 +282,13 @@ Item {
                         [0.000, "#8B0000"], [0.181, "#DC143C"], [0.272, "#FF4500"],
                         [0.363, "#FF8C00"], [0.454, "#FFD700"], [0.545, "#32CD32"],
                         [0.636, "#00BFFF"], [0.818, "#1E90FF"], [1.000, "#00008B"]
-                    ],
-                    fillColor: function (v) {
-                        let valC = isF ? (v - 32) * 5 / 9 : v;
-                        if (valC >= 35) return "220, 20, 60";
-                        if (valC >= 30) return "255, 69, 0";
-                        if (valC >= 25) return "255, 140, 0";
-                        if (valC >= 20) return "255, 215, 0";
-                        if (valC >= 15) return "50, 205, 50";
-                        if (valC >= 10) return "0, 191, 255";
-                        if (valC >= 0)  return "30, 144, 255";
-                        return "0, 0, 139";
-                    }
+                    ]
                 };
             }
             case 1: // Humidité
                 return {
                     domain: { top: 100, bottom: 0 },
-                    stops: [[0.0, "#2C3E50"], [0.5, "#4A90E2"], [1.0, "#AED6F1"]],
-                    fillColor: function () { return "74, 144, 226"; }
+                    stops: [[0.0, "#2C3E50"], [0.5, "#4A90E2"], [1.0, "#AED6F1"]]
                 };
             case 2: { // Wind — bleu ardoise
                 let isMph = unitText.indexOf("mph") !== -1;
@@ -130,20 +298,13 @@ Item {
                         [0.0, "#2A5070"],
                         [0.5, "#4A7FA8"],
                         [1.0, "#A8C8E0"]
-                    ],
-                    fillColor: function() { return "74, 127, 168"; }
+                    ]
                 };
             }
             case 3: // UV
                 return {
                     domain: { top: 12, bottom: 0 },
-                    stops: [[0.00, "#800080"], [0.33, "#FF0000"], [0.50, "#FF8C00"], [0.75, "#FFD700"], [1.00, "#32CD32"]],
-                    fillColor: function (v) {
-                        if (v >= 8) return "255, 0, 0";
-                        if (v >= 6) return "255, 140, 0";
-                        if (v >= 3) return "255, 215, 0";
-                        return "50, 205, 50";
-                    }
+                    stops: [[0.00, "#800080"], [0.33, "#FF0000"], [0.50, "#FF8C00"], [0.75, "#FFD700"], [1.00, "#32CD32"]]
                 };
             default:
                 return null;
@@ -246,16 +407,36 @@ Item {
                     let pR = chartRoot.padRight;
                     let pT = chartRoot.padTop;
                     let pB = chartRoot.padBottom;
-                    let rawIdx = Math.round((mouse.x - pL) / (w - pL - pR) * (n - 1));
-                    let idx = Math.max(0, Math.min(rawIdx, n - 1));
-
                     let range = (chartRoot.maxV - chartRoot.minV) || 1;
-                    let val = chartRoot.values[idx];
-                    let ptY = pT + (h - pT - pB) * (1 - (val - chartRoot.minV) / range);
-                    let isAxisHover = mouse.y >= (h - pB - 15);
-                    let isCurveHover = Math.abs(mouse.y - ptY) <= 30;
-                    if (isAxisHover || isCurveHover) {
-                        chartRoot.hoverIndex = idx;
+
+                    // MODE 1 — Axe des heures (bande basse du canvas) :
+                    // la souris défile horizontalement → on lit l'heure sous
+                    // le curseur, indépendamment de la position verticale.
+                    let isAxisHover = mouse.y >= (h - pB - 8);
+                    if (isAxisHover) {
+                        let rawIdx = Math.round((mouse.x - pL) / (w - pL - pR) * (n - 1));
+                        chartRoot.hoverIndex = Math.max(0, Math.min(rawIdx, n - 1));
+                        return;
+                    }
+
+                    // MODE 2 — Corps du graphique :
+                    // on cherche le point de courbe le plus proche en distance
+                    // euclidienne. Le marqueur s'affiche uniquement si ce point
+                    // est à moins de 40 px du curseur ; au-delà la souris n'a
+                    // aucun effet (pas de lecture fantôme loin de la courbe).
+                    let bestIdx = 0;
+                    let bestDist2 = Infinity;
+                    for (let i = 0; i < n; i++) {
+                        let px = pL + (w - pL - pR) * (i / (n - 1));
+                        let py = pT + (h - pT - pB) * (1 - (chartRoot.values[i] - chartRoot.minV) / range);
+                        let dx = mouse.x - px;
+                        let dy = mouse.y - py;
+                        let d2 = dx * dx + dy * dy;
+                        if (d2 < bestDist2) { bestDist2 = d2; bestIdx = i; }
+                    }
+
+                    if (bestDist2 <= 12 * 12) {
+                        chartRoot.hoverIndex = bestIdx;
                     } else {
                         chartRoot.hoverIndex = -1;
                     }
@@ -494,12 +675,21 @@ Item {
                     ctx.textBaseline = isNearTop ? "top" : "bottom";
                     let yOff = isNearTop ? cy + 12 : cy - 10;
 
-                    ctx.fillStyle = "rgb(" + pointColorStr + ")";
                     ctx.textAlign = alignText;
                     ctx.shadowColor = Qt.rgba(bgColor.r, bgColor.g, bgColor.b, 0.6);
                     ctx.shadowBlur = 4;
                     ctx.shadowOffsetY = 1;
+
+                    // On ne corrige la couleur QUE pour le texte : la courbe,
+                    // le halo et le point gardent leur teinte d'origine
+                    // (pointColorStr), seule la valeur lue au survol est
+                    // ajustée si son contraste avec le fond est trop faible.
+                    let bgLum = chartRoot.relativeLuminance(bgColor.r * 255, bgColor.g * 255, bgColor.b * 255);
+                    let readableColorStr = chartRoot.ensureReadable(pointColorStr, bgLum);
+
+                    ctx.fillStyle = "rgb(" + readableColorStr + ")";
                     ctx.fillText(textToDraw, cx, yOff);
+
                     ctx.shadowColor = "transparent";
                     ctx.shadowBlur = 0;
                     ctx.shadowOffsetY = 0;
@@ -515,7 +705,9 @@ Item {
                 drawYGrid();
                 drawXAxis(curIdx);
 
-                let baseColorStr = palette ? palette.fillColor(chartRoot.maxV) : defaultColorStr;
+                let baseColorStr = palette
+                ? chartRoot.hexToRgbString(chartRoot.colorForValue(palette.domain, palette.stops, chartRoot.maxV))
+                : defaultColorStr;
                 drawAreaFill(baseColorStr);
 
                 let strokeStyle;
@@ -530,7 +722,9 @@ Item {
                 drawCurveLine(strokeStyle);
 
                 if (curIdx !== -1) {
-                    let pointColorStr = palette ? palette.fillColor(pts[curIdx]) : defaultColorStr;
+                    let pointColorStr = palette
+                    ? chartRoot.hexToRgbString(chartRoot.colorForValue(palette.domain, palette.stops, pts[curIdx]))
+                    : defaultColorStr;
                     drawMarker(strokeStyle, pointColorStr, curIdx);
                 }
             }
