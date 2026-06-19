@@ -93,7 +93,7 @@ Your support helps keep the project alive and motivates future improvements.
 Planned improvements for future releases:
 
 - [ ] Improve scrolling behavior for better usability when only a few weather icons remain. 
-- [ ] Improve and refine weather animations (fix visual issues such as moon overlapping text).
+- [ ] Improve and refine weather animations (actual moon phases, dynamic sun colors, weather effects reacting to wind and conditions, fixes for visual glitches such as the moon overlapping text, and other visual improvements).
 - [ ] Improve the appearance of weather condition descriptions.
 - [x] Improve chart readability.
 - [ ] Add support for multiple weather API providers.
