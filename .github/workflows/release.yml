@@ -5,6 +5,9 @@ on:
     tags:
       - v*
 
+env:
+  TAG: ${{ github.ref_name }}
+
 permissions:
   contents: write
 
@@ -15,13 +18,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ env.TAG }}
 
       - name: Verify version
-        env:
-          TAG_VERSION: ${{ github.ref_name }}
         run: |
-          version="${TAG_VERSION#v}"
+          version="${TAG#v}"
           meta_version="$(jq -r '.KPlugin.Version' metadata.json)"
           if [ "$meta_version" != "$version" ]; then
             echo "ERROR: Tag version ($version) does not match metadata.json ($meta_version)"
@@ -32,8 +33,6 @@ jobs:
   build:
     needs: verify
     uses: ./.github/workflows/build-plasmoid.yml
-    with:
-      ref: ${{ github.ref }}
 
   release:
     needs: build
@@ -48,10 +47,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="${GITHUB_REF_NAME}"
-          plasmoid_file="${{ needs.build.outputs.plasmoid_file }}"
-
-          gh release create "$tag" \
-            --title "${tag} - Minimalist Animated Weather" \
+          gh release create "$TAG" \
+            --title "${TAG} - Minimalist Animated Weather" \
             --notes-from-tag \
-            "$plasmoid_file"
+            *.plasmoid
